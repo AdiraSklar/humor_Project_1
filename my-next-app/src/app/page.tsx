@@ -1,6 +1,5 @@
-
 "use client";
-import { createClient } from "@/utils/supabase/client";
+import { supabase } from "@/utils/supabase/client";
 import { useEffect, useMemo, useState } from "react";
 
 type Major = {
@@ -14,7 +13,6 @@ export default function Home() {
 
   useEffect(() => {
     const getData = async () => {
-      const supabase = createClient();
       const { data } = await supabase.from("university_majors").select();
       data?.sort((a, b) => a.name.localeCompare(b.name));
       setMajors(data);
