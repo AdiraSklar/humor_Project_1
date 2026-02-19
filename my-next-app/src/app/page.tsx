@@ -10,7 +10,7 @@ export default async function Index() {
   } = await supabase.auth.getUser()
 
   if (user) {
-    return redirect('/protected')
+    return redirect('/protected/captions')
   }
 
   return (

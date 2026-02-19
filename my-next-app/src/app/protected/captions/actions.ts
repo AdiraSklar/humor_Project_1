@@ -2,7 +2,6 @@
 
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
-
 export async function handleVote(formData: FormData) {
   const captionId = formData.get('captionId') as string;
   const voteValue = Number(formData.get('voteValue'));

@@ -3,6 +3,27 @@ import { redirect } from 'next/navigation';
 import CaptionsPage from './CaptionsPage';
 import { Caption } from '@/types/caption';
 import { Image } from '@/types/image';
+import HeaderNav from '../HeaderNav';
+
+// Fisher-Yates shuffle algorithm
+function shuffle(array: any[]) {
+  let currentIndex = array.length,  randomIndex;
+
+  // While there remain elements to shuffle.
+  while (currentIndex > 0) {
+
+    // Pick a remaining element.
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+
+  return array;
+}
+
 
 export default async function ProtectedCaptionsPage() {
   const supabase = await createClient();
@@ -15,13 +36,13 @@ export default async function ProtectedCaptionsPage() {
     return redirect('/');
   }
 
-  // 1. Fetch captions
-  const { data: captions, error: captionsError } = await supabase
+  // 1. Fetch a larger pool of captions
+  const { data: captionsPool, error: captionsError } = await supabase
     .from('captions')
     .select('id, content, image_id, is_public, created_datetime_utc')
     .eq('is_public', true)
     .order('created_datetime_utc', { ascending: false })
-    .limit(50);
+    .limit(200); // Fetch a larger pool to randomize from
 
   if (captionsError) {
     console.error("Error fetching captions:", captionsError);
@@ -29,9 +50,14 @@ export default async function ProtectedCaptionsPage() {
     return <CaptionsPage captions={[]} imagesMap={{}} />;
   }
 
-  console.log(`Fetched ${captions?.length || 0} captions.`);
+  // 2. Shuffle the pool and take the first 50
+  const shuffledCaptions = shuffle(captionsPool || []);
+  const captions = shuffledCaptions.slice(0, 50);
 
-  // 2. Process image IDs
+
+  console.log(`Fetched ${captionsPool?.length || 0} captions, showing 50 randomized.`);
+
+  // 3. Process image IDs from the final 50 captions
   const allImageIds = captions?.map(c => c.image_id).filter(Boolean) || [];
   console.log(`Found ${allImageIds.length} image IDs before deduplication.`);
 
@@ -40,7 +66,7 @@ export default async function ProtectedCaptionsPage() {
   
   let imagesMap: { [key: string]: string } = {};
 
-  // 3. Fetch images in chunks if necessary
+  // 4. Fetch images in chunks if necessary
   if (uniqueImageIds.length > 0) {
     const CHUNK_SIZE = 100;
     let allImages: Image[] = [];
@@ -64,7 +90,7 @@ export default async function ProtectedCaptionsPage() {
     
     console.log(`Fetched a total of ${allImages.length} image rows.`);
 
-    // 4. Build the imagesMap and log bad URLs
+    // 5. Build the imagesMap and log bad URLs
     if (allImages) {
       imagesMap = allImages.reduce((acc, image) => {
         if (!image.url) {
@@ -82,5 +108,10 @@ export default async function ProtectedCaptionsPage() {
   console.log(`Rendering ${visibleCaptions.length}/${captions.length || 0} captions with visible images.`);
 
 
-  return <CaptionsPage captions={visibleCaptions} imagesMap={imagesMap} />;
+  return (
+    <div className="flex-1 w-full flex flex-col gap-10 items-center bg-gradient-to-br from-purple-600 to-blue-500 text-white min-h-screen">
+      <HeaderNav user={user} />
+      <CaptionsPage captions={visibleCaptions} imagesMap={imagesMap} />
+    </div>
+  );
 }
