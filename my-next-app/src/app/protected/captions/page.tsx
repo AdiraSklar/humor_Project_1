@@ -42,7 +42,7 @@ export default async function ProtectedCaptionsPage() {
     .select('id, content, image_id, is_public, created_datetime_utc')
     .eq('is_public', true)
     .order('created_datetime_utc', { ascending: false })
-    .limit(200); // Fetch a larger pool to randomize from
+    .limit(300); // Fetch a larger pool to randomize from
 
   if (captionsError) {
     console.error("Error fetching captions:", captionsError);

@@ -127,19 +127,19 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
                           />
                       )}
                     </div>
-                    <p className="text-center text-2xl mb-4 flex-shrink-0">
+                    <p className="text-center text-2xl flex-shrink-0">
                       {activeCaption?.content}
                     </p>
                   </motion.div>
               ) : (
                   <div className="flex flex-col items-center justify-center text-center">
                     <h2 className="text-3xl font-bold">You're all done!</h2>
-                    <p className="text-gray-300 mt-2 mb-6">You've rated all available captions.</p>
+                    <p className="text-gray-300 mt-2 mb-6"></p>
                     <button
                         onClick={handleRestart}
                         className="px-6 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition-colors"
                     >
-                      Restart
+                      Load More
                     </button>
                   </div>
               )}
