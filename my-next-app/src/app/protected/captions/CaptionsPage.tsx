@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { handleVote } from './actions';
@@ -11,38 +11,11 @@ type CaptionsPageProps = {
   imagesMap: Record<string, string>;
 };
 
-// Fisher-Yates shuffle that returns a new shuffled array
-const shuffleCopy = <T,>(array: T[]) => {
-  const newArray = [...array];
-  let currentIndex = newArray.length;
-
-  while (currentIndex > 0) {
-    const randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-    [newArray[currentIndex], newArray[randomIndex]] = [
-      newArray[randomIndex],
-      newArray[currentIndex],
-    ];
-  }
-  return newArray;
-};
-
 const cardVariants = {
-  enter: {
-    x: -300, // ALWAYS enter from left
-    opacity: 0,
-    scale: 0.95,
-  },
-  center: {
-    zIndex: 1,
-    x: 0,
-    opacity: 1,
-    scale: 1,
-  },
+  enter: { x: -300, opacity: 0, scale: 0.95 },
+  center: { zIndex: 1, x: 0, opacity: 1, scale: 1 },
   exit: (voteDirection: number) => ({
     zIndex: 0,
-    // thumbs up -> swipe right, thumbs down -> swipe left (your existing behavior)
-    // if you want BOTH to exit the same way too, tell me and I’ll tweak this.
     x: voteDirection === 1 ? 300 : -300,
     opacity: 0,
     scale: 0.95,
@@ -50,34 +23,46 @@ const cardVariants = {
 };
 
 export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps) {
-  // Shuffle ONCE per mount
-  const [deck] = useState(() => shuffleCopy(captions));
+  // IMPORTANT: initialize ONCE from server-provided captions (already randomized in page.tsx)
+  const [deck, setDeck] = useState<Caption[]>(() => captions);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lastVoteDirection, setLastVoteDirection] = useState(1);
-
-  // Hidden form to trigger the server action
-  const formRef = useRef<HTMLFormElement>(null);
-  const captionIdRef = useRef<HTMLInputElement>(null);
-  const voteValueRef = useRef<HTMLInputElement>(null);
+  const [isVoting, setIsVoting] = useState(false);
 
   const activeCaption = useMemo(() => deck[currentIndex], [deck, currentIndex]);
+
   const imageUrl = useMemo(
       () => (activeCaption ? imagesMap[activeCaption.image_id] : null),
       [activeCaption, imagesMap]
   );
 
-  const handleVoteClick = (voteDirection: number) => {
-    if (!activeCaption || !formRef.current || !captionIdRef.current || !voteValueRef.current) return;
+  const handleVoteClick = async (voteDirection: number) => {
+    if (isVoting) return;
+    if (!activeCaption) return;
 
-    captionIdRef.current.value = activeCaption.id;
-    voteValueRef.current.value = voteDirection.toString();
+    setIsVoting(true);
     setLastVoteDirection(voteDirection);
 
-    formRef.current.requestSubmit();
-    setCurrentIndex((prev) => prev + 1);
+    const fd = new FormData();
+    fd.set('captionId', activeCaption.id);
+    fd.set('voteValue', String(voteDirection));
+
+    const res = await handleVote(fd);
+
+    if (res.ok) {
+      // Only advance if DB write succeeded
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      console.error(res.message);
+      // Optional: you could show a toast/message here
+    }
+
+    // tiny delay prevents double clicks during animation
+    setTimeout(() => setIsVoting(false), 250);
   };
 
   const handleRestart = () => {
+    // "Load More" without refetching: just restart the same deck
     setCurrentIndex(0);
   };
 
@@ -92,14 +77,11 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
 
   return (
       <div className="flex-1 w-full flex flex-col gap-6 items-center px-2">
-        <form ref={formRef} action={handleVote} className="hidden">
-          <input type="hidden" name="captionId" ref={captionIdRef} />
-          <input type="hidden" name="voteValue" ref={voteValueRef} />
-        </form>
-
         <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-4">
           <p className="font-bold text-xl tracking-wide">
-            {currentIndex < deck.length ? `${currentIndex + 1} / ${deck.length}` : `${deck.length} / ${deck.length}`}
+            {currentIndex < deck.length
+                ? `${currentIndex + 1} / ${deck.length}`
+                : `${deck.length} / ${deck.length}`}
           </p>
 
           <div className="relative w-full h-[800px] flex items-center justify-center">
@@ -127,8 +109,9 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
                           />
                       )}
                     </div>
+
                     <p className="text-center text-2xl flex-shrink-0">
-                      {activeCaption?.content}
+                      {activeCaption?.content ?? '--- EMPTY CONTENT ---'}
                     </p>
                   </motion.div>
               ) : (
@@ -138,6 +121,7 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
                     <button
                         onClick={handleRestart}
                         className="px-6 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition-colors"
+                        type="button"
                     >
                       Load More
                     </button>
@@ -151,18 +135,20 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
                 <div className="flex items-center gap-8">
                   <button
                       onClick={() => handleVoteClick(-1)}
-                      className="p-4 bg-white/10 rounded-full text-red-400 hover:bg-white/20 hover:scale-110 transition-transform"
+                      className="p-4 bg-white/10 rounded-full text-red-400 hover:bg-white/20 hover:scale-110 transition-transform disabled:opacity-50 disabled:hover:scale-100"
                       aria-label="Downvote"
                       type="button"
+                      disabled={isVoting}
                   >
                     <ThumbsDown size={32} />
                   </button>
 
                   <button
                       onClick={() => handleVoteClick(1)}
-                      className="p-4 bg-white/10 rounded-full text-green-400 hover:bg-white/20 hover:scale-110 transition-transform"
+                      className="p-4 bg-white/10 rounded-full text-green-400 hover:bg-white/20 hover:scale-110 transition-transform disabled:opacity-50 disabled:hover:scale-100"
                       aria-label="Upvote"
                       type="button"
+                      disabled={isVoting}
                   >
                     <ThumbsUp size={32} />
                   </button>

@@ -1,24 +1,34 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
-import { revalidatePath } from 'next/cache';
-export async function handleVote(formData: FormData) {
-  const captionId = formData.get('captionId') as string;
-  const voteValue = Number(formData.get('voteValue'));
+
+type VoteResult =
+    | { ok: true; mode: 'insert' | 'update' }
+    | { ok: false; message: string };
+
+export async function handleVote(formData: FormData): Promise<VoteResult> {
+  const captionId = String(formData.get('captionId') ?? '');
+  const voteValueRaw = formData.get('voteValue');
+  const voteValue = Number(voteValueRaw);
+
+  if (!captionId || !Number.isFinite(voteValue)) {
+    return { ok: false, message: 'Bad input' };
+  }
 
   const supabase = await createClient();
   const {
     data: { user },
+    error: userErr,
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    console.error('User is not authenticated');
-    return;
+  if (userErr || !user) {
+    return { ok: false, message: 'User is not authenticated' };
   }
 
   const now = new Date().toISOString();
 
-  const { error } = await supabase.from('caption_votes').insert([
+  // Try insert first
+  const { error: insertError } = await supabase.from('caption_votes').insert([
     {
       created_datetime_utc: now,
       modified_datetime_utc: now,
@@ -28,9 +38,29 @@ export async function handleVote(formData: FormData) {
     },
   ]);
 
-  if (error) {
-    console.error('Error inserting vote:', error);
-  } else {
-    revalidatePath('/protected/captions');
+  if (!insertError) {
+    // IMPORTANT: do NOT revalidatePath here (that causes the 300 re-fetch + reshuffle)
+    return { ok: true, mode: 'insert' };
   }
+
+  // Duplicate -> update instead
+  if (insertError.code === '23505') {
+    const { error: updateError } = await supabase
+        .from('caption_votes')
+        .update({
+          vote_value: voteValue,
+          modified_datetime_utc: now,
+        })
+        .eq('profile_id', user.id)
+        .eq('caption_id', captionId);
+
+    if (updateError) {
+      return { ok: false, message: `Error updating vote: ${updateError.message}` };
+    }
+
+    // IMPORTANT: do NOT revalidatePath here
+    return { ok: true, mode: 'update' };
+  }
+
+  return { ok: false, message: `Error inserting vote: ${insertError.message}` };
 }
