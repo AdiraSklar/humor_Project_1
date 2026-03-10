@@ -10,6 +10,7 @@ export default function HeaderNav({ user }: { user: User }) {
 
   const majorsActive = pathname === '/protected';
   const captionsActive = pathname === '/protected/captions';
+  const uploadActive = pathname === '/upload';
 
   return (
     <div className="w-full">
@@ -24,6 +25,9 @@ export default function HeaderNav({ user }: { user: User }) {
           </Link>
           <Link href="/protected/captions">
               <button className={`p-3 text-white rounded-full transition-transform ${captionsActive ? 'bg-blue-500/50 hover:bg-blue-500/60' : 'bg-white/10 hover:bg-white/20 hover:scale-110'}`}>Rate Captions</button>
+          </Link>
+          <Link href="/upload">
+              <button className={`p-3 text-white rounded-full transition-transform ${uploadActive ? 'bg-blue-500/50 hover:bg-blue-500/60' : 'bg-white/10 hover:bg-white/20 hover:scale-110'}`}>Upload Image</button>
           </Link>
       </div>
     </div>
