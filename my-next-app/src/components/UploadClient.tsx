@@ -1,34 +1,40 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const SUPPORTED_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'image/heic',
+  'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic',
 ];
 
-type Stage = 'idle' | 'presigning' | 'uploading' | 'generating' | 'done' | 'error';
+type Stage = 'idle' | 'presigning' | 'uploading' | 'generating' | 'error';
 
 const STAGE_LABEL: Record<Stage, string> = {
   idle: '',
   presigning: 'Getting upload URL…',
   uploading: 'Uploading image…',
   generating: 'Generating captions…',
-  done: '',
   error: '',
+};
+
+type UploadItem = { preview: string; captions: string[] };
+
+const cardVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? 320 : -320, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit:  (dir: number) => ({ x: dir > 0 ? -320 : 320, opacity: 0 }),
 };
 
 export default function UploadClient() {
   const [stage, setStage] = useState<Stage>('idle');
-  const [captions, setCaptions] = useState<string[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
-  const [preview, setPreview] = useState<string | null>(null);
+  const [history, setHistory] = useState<UploadItem[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [slideDir, setSlideDir] = useState(1);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const busy = stage !== 'idle' && stage !== 'error';
 
   const processFile = async (file: File) => {
     if (!SUPPORTED_TYPES.includes(file.type)) {
@@ -37,12 +43,10 @@ export default function UploadClient() {
       return;
     }
 
-    setPreview(URL.createObjectURL(file));
-    setCaptions([]);
+    const preview = URL.createObjectURL(file);
     setErrorMsg('');
 
     try {
-      // 1. Get presigned URL
       setStage('presigning');
       const presignRes = await fetch('/api/pipeline/presign', {
         method: 'POST',
@@ -52,16 +56,14 @@ export default function UploadClient() {
       if (!presignRes.ok) throw new Error((await presignRes.json()).error ?? 'Presign failed');
       const { presignedUrl, cdnUrl } = await presignRes.json();
 
-      // 2. PUT file directly to the presigned URL
       setStage('uploading');
       const putRes = await fetch(presignedUrl, {
         method: 'PUT',
         headers: { 'Content-Type': file.type },
         body: file,
       });
-      if (!putRes.ok) throw new Error(`Direct upload failed (${putRes.status})`);
+      if (!putRes.ok) throw new Error(`Upload failed (${putRes.status})`);
 
-      // 3. Register image + generate captions
       setStage('generating');
       const genRes = await fetch('/api/pipeline/generate', {
         method: 'POST',
@@ -70,13 +72,20 @@ export default function UploadClient() {
       });
       if (!genRes.ok) throw new Error((await genRes.json()).error ?? 'Caption generation failed');
 
-      const genData: { captions: string[] } = await genRes.json();
-      setCaptions(genData.captions ?? []);
-      setStage('done');
+      const { captions }: { captions: string[] } = await genRes.json();
+
+      // New card always appended to the right; jump to it
+      const nextIndex = history.length;
+      setSlideDir(1);
+      setHistory(prev => [...prev, { preview, captions: captions ?? [] }]);
+      setActiveIndex(nextIndex);
+      setStage('idle');
     } catch (e: unknown) {
       setErrorMsg(e instanceof Error ? e.message : String(e));
       setStage('error');
     }
+
+    if (inputRef.current) inputRef.current.value = '';
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,104 +93,113 @@ export default function UploadClient() {
     if (file) processFile(file);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
-  };
+  const goLeft = () => { setSlideDir(-1); setActiveIndex(i => i - 1); };
+  const goRight = () => { setSlideDir(1);  setActiveIndex(i => i + 1); };
 
-  const reset = () => {
-    setStage('idle');
-    setCaptions([]);
-    setErrorMsg('');
-    setPreview(null);
-    if (inputRef.current) inputRef.current.value = '';
-  };
-
-  const busy = ['presigning', 'uploading', 'generating'].includes(stage);
+  const activeItem = history[activeIndex];
 
   return (
     <div className="w-full flex flex-col items-center gap-6">
-      {/* Drop zone */}
-      <div
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={handleDrop}
-        onClick={() => !busy && inputRef.current?.click()}
-        className={`w-full border-2 border-dashed rounded-2xl p-10 flex flex-col items-center gap-3 transition-colors
-          ${busy
-            ? 'opacity-50 cursor-not-allowed border-white/20'
-            : 'border-white/40 hover:border-white/70 hover:bg-white/5 cursor-pointer'
-          }`}
-      >
-        <Upload size={36} className="text-white/70" />
-        <p className="text-white/80 text-sm text-center">
-          Drag & drop an image, or click to select
-        </p>
-        <p className="text-white/40 text-xs">JPEG · PNG · WebP · GIF · HEIC</p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept={SUPPORTED_TYPES.join(',')}
-          onChange={handleInputChange}
-          className="hidden"
-        />
+
+      {/* Upload trigger */}
+      <div className="flex flex-col items-center gap-2">
+        <button
+          onClick={() => !busy && inputRef.current?.click()}
+          disabled={busy}
+          type="button"
+          className="flex items-center gap-2 px-6 py-3 bg-white/20 hover:bg-white/30 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-full shadow-lg transition-colors"
+        >
+          <Upload size={18} />
+          {history.length > 0 ? 'Upload Another' : 'Upload Image'}
+        </button>
+
+        {busy && (
+          <div className="flex items-center gap-2 text-white/70 text-sm">
+            <svg className="animate-spin h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+            {STAGE_LABEL[stage]}
+          </div>
+        )}
+
+        {stage === 'error' && (
+          <p className="text-red-300 text-sm text-center max-w-sm">{errorMsg}</p>
+        )}
       </div>
 
-      {/* Preview */}
-      {preview && (
-        <img
-          src={preview}
-          alt="Preview"
-          className="w-full max-h-72 object-contain rounded-xl shadow-lg bg-white/5"
-        />
-      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept={SUPPORTED_TYPES.join(',')}
+        onChange={handleInputChange}
+        className="hidden"
+      />
 
-      {/* Progress */}
-      {busy && (
-        <div className="flex items-center gap-3 text-white/80">
-          <svg className="animate-spin h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-          </svg>
-          <span>{STAGE_LABEL[stage]}</span>
-        </div>
-      )}
+      {/* Card carousel */}
+      {history.length > 0 && activeItem && (
+        <div className="w-full flex items-center gap-2">
 
-      {/* Error */}
-      {stage === 'error' && (
-        <div className="w-full bg-red-500/20 border border-red-400/40 rounded-xl p-4 text-red-200 text-sm">
-          {errorMsg}
-        </div>
-      )}
+          <button
+            onClick={goLeft}
+            disabled={activeIndex === 0}
+            type="button"
+            className="shrink-0 p-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft size={24} />
+          </button>
 
-      {/* Captions */}
-      {stage === 'done' && (
-        <div className="w-full flex flex-col gap-3">
-          <h2 className="text-xl font-semibold text-center">Generated Captions</h2>
-          {captions.length === 0 ? (
-            <p className="text-center text-white/60 text-sm">No captions returned.</p>
-          ) : (
-            captions.map((caption, i) => (
-              <div
-                key={i}
-                className="bg-white/10 backdrop-blur-lg rounded-xl p-4 text-white text-center shadow"
+          <div className="flex-1 overflow-hidden">
+            <AnimatePresence initial={false} custom={slideDir} mode="wait">
+              <motion.div
+                key={activeIndex}
+                custom={slideDir}
+                variants={cardVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="w-full bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg p-4 flex flex-col gap-4"
               >
-                {caption}
-              </div>
-            ))
-          )}
-        </div>
-      )}
+                <img
+                  src={activeItem.preview}
+                  alt="Uploaded"
+                  className="w-full max-h-64 object-contain rounded-xl bg-black/20"
+                />
 
-      {/* Reset */}
-      {(stage === 'done' || stage === 'error') && (
-        <button
-          onClick={reset}
-          className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow transition-colors"
-          type="button"
-        >
-          Upload Another
-        </button>
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-white/50 text-center uppercase tracking-widest">Captions</p>
+                  {activeItem.captions.length === 0 ? (
+                    <p className="text-center text-white/50 text-sm">No captions returned.</p>
+                  ) : (
+                    activeItem.captions.map((caption, i) => (
+                      <div
+                        key={i}
+                        className="bg-white/10 rounded-xl px-4 py-3 text-white text-center text-sm"
+                      >
+                        {caption}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <p className="text-center text-white/30 text-xs">
+                  {activeIndex + 1} / {history.length}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          <button
+            onClick={goRight}
+            disabled={activeIndex === history.length - 1}
+            type="button"
+            className="shrink-0 p-2 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronRight size={24} />
+          </button>
+
+        </div>
       )}
     </div>
   );
