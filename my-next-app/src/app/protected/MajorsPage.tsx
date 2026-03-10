@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { type PostgrestError } from '@supabase/supabase-js'
 import { Major } from '@/types/major'
 
-export default function MajorsPage({ majors, majorsError }: { majors: Major[], majorsError: any }) {
+export default function MajorsPage({ majors, majorsError }: { majors: Major[], majorsError: PostgrestError | null }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedLetter, setSelectedLetter] = useState('')
 
