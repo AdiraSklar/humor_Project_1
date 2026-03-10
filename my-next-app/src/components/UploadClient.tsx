@@ -12,8 +12,8 @@ type Stage = 'idle' | 'presigning' | 'uploading' | 'generating' | 'error';
 
 const STAGE_LABEL: Record<Stage, string> = {
   idle: '',
-  presigning: 'Securing your spot…',
-  uploading: 'Sending it up…',
+  presigning: 'Cooking up captions ✨',
+  uploading: 'Cooking up captions ✨',
   generating: 'Cooking up captions ✨',
   error: '',
 };

@@ -27,7 +27,7 @@ export default function HeaderNav({ user }: { user: User }) {
               <button className={`p-3 text-white rounded-full transition-transform ${captionsActive ? 'bg-blue-500/50 hover:bg-blue-500/60' : 'bg-white/10 hover:bg-white/20 hover:scale-110'}`}>Rate Captions</button>
           </Link>
           <Link href="/upload">
-              <button className={`p-3 text-white rounded-full transition-transform ${uploadActive ? 'bg-blue-500/50 hover:bg-blue-500/60' : 'bg-white/10 hover:bg-white/20 hover:scale-110'}`}>Upload Image</button>
+              <button className={`p-3 text-white rounded-full transition-transform ${uploadActive ? 'bg-blue-500/50 hover:bg-blue-500/60' : 'bg-white/10 hover:bg-white/20 hover:scale-110'}`}>Generate Captions</button>
           </Link>
       </div>
     </div>

@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ imageId }),
+    body: JSON.stringify({ imageId, numCaptions: 6 }),
   });
 
   if (!captionsRes.ok) {
@@ -76,5 +76,5 @@ export async function POST(request: Request) {
         String(c)
   );
 
-  return NextResponse.json({ captions });
+  return NextResponse.json({ captions: captions.slice(0, 6) });
 }
