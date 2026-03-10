@@ -10,10 +10,10 @@ export default async function UploadPage() {
   if (!user) redirect('/');
 
   return (
-    <div className="flex-1 w-full flex flex-col items-center bg-gradient-to-br from-purple-600 to-blue-500 text-white min-h-screen">
+    <div className="flex-1 w-full flex flex-col items-center min-h-screen text-white" style={{ background: 'radial-gradient(ellipse 120% 45% at 50% 0%, rgba(99,102,241,0.1) 0%, #08080e 55%)' }}>
       <HeaderNav user={user} />
       <div className="w-full max-w-lg px-4 py-8 flex flex-col gap-6">
-        <h1 className="text-3xl font-bold text-center">Upload & Generate Captions</h1>
+
         <UploadClient />
       </div>
     </div>

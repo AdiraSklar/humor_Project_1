@@ -3,32 +3,45 @@
 import { type User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import UserProfile from './UserProfile';
-import { usePathname } from 'next/navigation'; // Import usePathname
+import { usePathname } from 'next/navigation';
+
+function navCls(active: boolean) {
+  return `px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-150 ${
+    active
+      ? 'bg-violet-500/15 text-violet-200 border border-violet-400/30'
+      : 'text-white/45 hover:text-violet-300 hover:bg-violet-500/10'
+  }`;
+}
 
 export default function HeaderNav({ user }: { user: User }) {
-  const pathname = usePathname(); // Get current pathname
+  const pathname = usePathname();
 
-  const majorsActive = pathname === '/protected';
+  const majorsActive   = pathname === '/protected';
   const captionsActive = pathname === '/protected/captions';
-  const uploadActive = pathname === '/upload';
+  const uploadActive   = pathname === '/upload';
 
   return (
-    <div className="w-full">
-      <nav className="w-full flex justify-center border-b border-b-white/10 h-16">
-        <div className="w-full max-w-4xl flex justify-end items-center p-3 text-sm">
-          <UserProfile user={user} />
-        </div>
-      </nav>
-      <div className="w-full flex justify-center gap-4 py-4">
+    <div
+      className="w-full sticky top-0 z-20 border-b border-white/[0.06] backdrop-blur-2xl"
+      style={{ background: 'rgba(8,8,14,0.82)' }}
+    >
+      <div className="max-w-4xl mx-auto flex items-center justify-between gap-4 px-4 h-14">
+
+        {/* Nav pills */}
+        <div className="flex items-center gap-1">
           <Link href="/protected">
-              <button className={`p-3 text-white rounded-full transition-transform ${majorsActive ? 'bg-blue-500/50 hover:bg-blue-500/60' : 'bg-white/10 hover:bg-white/20 hover:scale-110'}`}>See University Majors</button>
+            <button type="button" className={navCls(majorsActive)}>Majors</button>
           </Link>
           <Link href="/protected/captions">
-              <button className={`p-3 text-white rounded-full transition-transform ${captionsActive ? 'bg-blue-500/50 hover:bg-blue-500/60' : 'bg-white/10 hover:bg-white/20 hover:scale-110'}`}>Rate Captions</button>
+            <button type="button" className={navCls(captionsActive)}>Rate Captions</button>
           </Link>
           <Link href="/upload">
-              <button className={`p-3 text-white rounded-full transition-transform ${uploadActive ? 'bg-blue-500/50 hover:bg-blue-500/60' : 'bg-white/10 hover:bg-white/20 hover:scale-110'}`}>Generate Captions</button>
+            <button type="button" className={navCls(uploadActive)}>Generate</button>
           </Link>
+        </div>
+
+        {/* Avatar */}
+        <UserProfile user={user} />
       </div>
     </div>
   );

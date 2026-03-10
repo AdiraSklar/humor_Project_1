@@ -107,7 +107,7 @@ export default function UploadClient() {
           onClick={() => !busy && inputRef.current?.click()}
           disabled={busy}
           type="button"
-          className="group flex items-center gap-2.5 px-8 py-3.5 bg-white/15 hover:bg-white/25 border border-white/20 hover:border-white/50 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-base rounded-full shadow-xl backdrop-blur-sm transition-all duration-200 tracking-wide"
+          className="group flex items-center gap-2.5 px-8 py-3.5 bg-white/[0.07] hover:bg-violet-500/15 border border-white/15 hover:border-violet-400/40 disabled:opacity-40 disabled:cursor-not-allowed text-white/90 hover:text-violet-200 font-semibold text-base rounded-full shadow-xl backdrop-blur-sm transition-all duration-200 tracking-wide"
           style={{ fontFamily: 'var(--font-lato), sans-serif' }}
         >
           <Upload size={17} className="group-hover:scale-110 transition-transform duration-200" />
@@ -174,7 +174,7 @@ export default function UploadClient() {
             onClick={goLeft}
             disabled={activeIndex === 0}
             type="button"
-            className="shrink-0 p-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 disabled:opacity-15 disabled:cursor-not-allowed transition-all"
+            className="shrink-0 p-2 rounded-full bg-white/[0.07] hover:bg-violet-500/15 border border-white/[0.09] hover:border-violet-400/30 text-white/60 hover:text-violet-300 disabled:opacity-15 disabled:cursor-not-allowed transition-all"
           >
             <ChevronLeft size={20} />
           </button>
@@ -189,7 +189,7 @@ export default function UploadClient() {
                 animate="center"
                 exit="exit"
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="w-full bg-white/8 border border-white/10 backdrop-blur-xl rounded-3xl shadow-2xl p-5 flex flex-col gap-5"
+                className="w-full bg-white/[0.07] border border-white/[0.09] backdrop-blur-2xl rounded-3xl shadow-2xl p-5 flex flex-col gap-5"
               >
                 {/* Image */}
                 <img
@@ -200,7 +200,7 @@ export default function UploadClient() {
 
                 {/* Captions grid */}
                 <div className="flex flex-col gap-2">
-                  <p className="text-[10px] text-white/40 text-center uppercase tracking-[0.2em]">Generated Captions</p>
+                  <p className="text-[10px] text-white/50 text-center uppercase tracking-[0.22em] font-semibold">Generated Captions</p>
                   {activeItem.captions.length === 0 ? (
                     <p className="text-center text-white/40 text-sm">No captions returned.</p>
                   ) : (
@@ -208,7 +208,7 @@ export default function UploadClient() {
                       {activeItem.captions.map((caption, i) => (
                         <div
                           key={i}
-                          className="group/cap relative bg-white/8 hover:bg-white/15 border border-white/10 hover:border-white/30 rounded-xl px-3 py-2.5 text-white text-center text-xs leading-snug cursor-default transition-all duration-200 hover:scale-[1.03] hover:shadow-lg hover:shadow-white/10"
+                          className="bg-white/[0.07] hover:bg-violet-500/10 border border-white/[0.09] hover:border-violet-400/30 rounded-xl px-3 py-2.5 text-white/90 hover:text-violet-100 text-center text-xs leading-snug cursor-default transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_0_16px_rgba(167,139,250,0.1)]"
                         >
                           {caption}
                         </div>
@@ -218,7 +218,7 @@ export default function UploadClient() {
                 </div>
 
                 {/* Counter */}
-                <p className="text-center text-white/25 text-[10px] tracking-widest">
+                <p className="text-center text-white/35 text-[10px] tracking-widest font-medium">
                   {activeIndex + 1} / {history.length}
                 </p>
               </motion.div>
@@ -229,7 +229,7 @@ export default function UploadClient() {
             onClick={goRight}
             disabled={activeIndex === history.length - 1}
             type="button"
-            className="shrink-0 p-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 disabled:opacity-15 disabled:cursor-not-allowed transition-all"
+            className="shrink-0 p-2 rounded-full bg-white/[0.07] hover:bg-violet-500/15 border border-white/[0.09] hover:border-violet-400/30 text-white/60 hover:text-violet-300 disabled:opacity-15 disabled:cursor-not-allowed transition-all"
           >
             <ChevronRight size={20} />
           </button>

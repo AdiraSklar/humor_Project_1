@@ -40,10 +40,10 @@ export default function AuthButtons({ user }: { user: User | null }) {
   ) : (
     <button
       onClick={handleSignIn}
-      className="flex items-center justify-center w-full px-4 py-3 font-semibold text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+      className="flex items-center justify-center w-full gap-3 px-4 py-3 bg-white hover:bg-gray-100 text-gray-800 font-semibold text-sm rounded-xl shadow-sm transition-colors duration-150"
     >
       <GoogleIcon />
-      Sign in with Google
+      Continue with Google
     </button>
   )
 }

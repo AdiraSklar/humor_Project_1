@@ -91,7 +91,7 @@ export default async function ProtectedCaptionsPage() {
   console.log(`Rendering ${visibleCaptions.length}/${captions.length} captions with visible images.`);
 
   return (
-      <div className="flex-1 w-full flex flex-col gap-10 items-center bg-gradient-to-br from-purple-600 to-blue-500 text-white min-h-screen">
+      <div className="flex-1 w-full flex flex-col items-center min-h-screen text-white" style={{ background: 'radial-gradient(ellipse 120% 45% at 50% 0%, rgba(99,102,241,0.1) 0%, #08080e 55%)' }}>
         <HeaderNav user={user} />
         <CaptionsPage captions={visibleCaptions} imagesMap={imagesMap} />
       </div>
