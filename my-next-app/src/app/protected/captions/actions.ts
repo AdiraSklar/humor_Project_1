@@ -32,6 +32,8 @@ export async function handleVote(formData: FormData): Promise<VoteResult> {
     {
       created_datetime_utc: now,
       modified_datetime_utc: now,
+      created_by_user_id: user.id,
+      modified_by_user_id: user.id,
       vote_value: voteValue,
       profile_id: user.id,
       caption_id: captionId,
@@ -50,6 +52,7 @@ export async function handleVote(formData: FormData): Promise<VoteResult> {
         .update({
           vote_value: voteValue,
           modified_datetime_utc: now,
+          modified_by_user_id: user.id,
         })
         .eq('profile_id', user.id)
         .eq('caption_id', captionId);
