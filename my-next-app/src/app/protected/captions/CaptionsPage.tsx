@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Undo2 } from 'lucide-react';
 import { handleVote } from './actions';
 import type { Caption } from '@/types/caption';
 
@@ -11,22 +11,30 @@ type CaptionsPageProps = {
   imagesMap: Record<string, string>;
 };
 
+// dir: 1 = voted up (flies right), -1 = voted down (flies left), 0 = going back
 const cardVariants = {
-  enter: { opacity: 0, scale: 0.94 },
+  enter: (dir: number) => ({
+    x: dir === 0 ? -220 : 0,
+    opacity: 0,
+    scale: dir === 0 ? 1 : 0.94,
+  }),
   center: { x: 0, opacity: 1, scale: 1, rotate: 0 },
   exit: (dir: number) => ({
-    x: dir === 1 ? 600 : -600,
+    x: dir === 1 ? 600 : dir === -1 ? -600 : 220,
     opacity: 0,
-    rotate: dir === 1 ? 18 : -18,
-    scale: 0.85,
+    rotate: dir === 1 ? 18 : dir === -1 ? -18 : 0,
+    scale: dir === 0 ? 0.96 : 0.85,
   }),
 };
+
+type HistoryEntry = { captionIndex: number; voteDirection: number };
 
 export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps) {
   const [deck] = useState<Caption[]>(() => captions);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lastVoteDirection, setLastVoteDirection] = useState(1);
   const [isVoting, setIsVoting] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   const activeCaption = useMemo(() => deck[currentIndex], [deck, currentIndex]);
   const imageUrl = useMemo(
@@ -39,6 +47,7 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
 
     setIsVoting(true);
     setLastVoteDirection(voteDirection);
+    setHistory((prev) => [...prev, { captionIndex: currentIndex, voteDirection }]);
     setCurrentIndex((prev) => prev + 1);
 
     const captionId = activeCaption.id;
@@ -52,7 +61,22 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
     setTimeout(() => setIsVoting(false), 300);
   };
 
-  const handleRestart = () => setCurrentIndex(0);
+  const handleBack = () => {
+    if (isVoting || history.length === 0) return;
+    setIsVoting(true);
+    setLastVoteDirection(0);
+    setHistory((prev) => {
+      const entry = prev[prev.length - 1];
+      setCurrentIndex(entry.captionIndex);
+      return prev.slice(0, -1);
+    });
+    setTimeout(() => setIsVoting(false), 300);
+  };
+
+  const handleRestart = () => {
+    setCurrentIndex(0);
+    setHistory([]);
+  };
 
   if (deck.length === 0) {
     return (
@@ -150,17 +174,42 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
                   <h2 className="text-2xl font-bold text-white">You&apos;re all done!</h2>
                   <p className="text-sm text-white/40">You rated every caption in the deck.</p>
                 </div>
-                <button
-                  onClick={handleRestart}
-                  type="button"
-                  className="px-7 py-2.5 bg-white/[0.07] hover:bg-violet-500/15 border border-white/15 hover:border-violet-400/35 text-white/90 hover:text-violet-200 font-semibold rounded-full transition-all"
-                >
-                  Go Again
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleBack}
+                    disabled={history.length === 0}
+                    type="button"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-white/[0.07] hover:bg-white/[0.12] border border-white/15 hover:border-white/25 text-white/60 hover:text-white/90 font-semibold rounded-full transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                  >
+                    <Undo2 size={15} />
+                    Back
+                  </button>
+                  <button
+                    onClick={handleRestart}
+                    type="button"
+                    className="px-7 py-2.5 bg-white/[0.07] hover:bg-violet-500/15 border border-white/15 hover:border-violet-400/35 text-white/90 hover:text-violet-200 font-semibold rounded-full transition-all"
+                  >
+                    Go Again
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
+
+        {/* Back button */}
+        {currentIndex < deck.length && (
+          <button
+            onClick={handleBack}
+            disabled={isVoting || history.length === 0}
+            type="button"
+            aria-label="Go back"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/[0.08] border border-white/20 text-white/70 hover:text-white hover:bg-white/[0.13] hover:border-white/30 transition-all duration-150 disabled:opacity-20 disabled:cursor-not-allowed"
+          >
+            <Undo2 size={13} />
+            <span className="text-xs font-semibold">Back</span>
+          </button>
+        )}
 
       </div>
     </div>
