@@ -17,6 +17,7 @@ const cardVariants = {
     x: dir === 0 ? -220 : 0,
     opacity: 0,
     scale: dir === 0 ? 1 : 0.94,
+    transition: { duration: 0.18, ease: [0.0, 0.0, 0.2, 1] as const },
   }),
   center: { x: 0, opacity: 1, scale: 1, rotate: 0 },
   exit: (dir: number) => ({
@@ -24,6 +25,7 @@ const cardVariants = {
     opacity: 0,
     rotate: dir === 1 ? 18 : dir === -1 ? -18 : 0,
     scale: dir === 0 ? 0.96 : 0.85,
+    transition: { duration: 0.22, ease: [0.4, 0.0, 1, 1] as const },
   }),
 };
 
@@ -111,11 +113,7 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{
-                  exit: { duration: 0.22, ease: 'easeIn' },
-                  enter: { duration: 0.18, ease: 'easeOut' },
-                  opacity: { duration: 0.15 },
-                }}
+                transition={{ opacity: { duration: 0.15 } }}
                 className="w-full bg-white/[0.07] border border-white/[0.09] backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col"
               >
                 {/* Image — edge to edge */}
