@@ -12,13 +12,13 @@ type CaptionsPageProps = {
 };
 
 const cardVariants = {
-  enter: { x: -160, opacity: 0, scale: 0.97 },
-  center: { zIndex: 1, x: 0, opacity: 1, scale: 1 },
+  enter: { opacity: 0, scale: 0.94 },
+  center: { x: 0, opacity: 1, scale: 1, rotate: 0 },
   exit: (dir: number) => ({
-    zIndex: 0,
-    x: dir === 1 ? 160 : -160,
+    x: dir === 1 ? 600 : -600,
     opacity: 0,
-    scale: 0.97,
+    rotate: dir === 1 ? 18 : -18,
+    scale: 0.85,
   }),
 };
 
@@ -34,24 +34,22 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
     [activeCaption, imagesMap]
   );
 
-  const handleVoteClick = async (voteDirection: number) => {
+  const handleVoteClick = (voteDirection: number) => {
     if (isVoting || !activeCaption) return;
 
     setIsVoting(true);
     setLastVoteDirection(voteDirection);
+    setCurrentIndex((prev) => prev + 1);
 
+    const captionId = activeCaption.id;
     const fd = new FormData();
-    fd.set('captionId', activeCaption.id);
+    fd.set('captionId', captionId);
     fd.set('voteValue', String(voteDirection));
+    handleVote(fd).then((res) => {
+      if (!res.ok) console.error(res.message);
+    });
 
-    const res = await handleVote(fd);
-    if (res.ok) {
-      setCurrentIndex((prev) => prev + 1);
-    } else {
-      console.error(res.message);
-    }
-
-    setTimeout(() => setIsVoting(false), 150);
+    setTimeout(() => setIsVoting(false), 300);
   };
 
   const handleRestart = () => setCurrentIndex(0);
@@ -79,7 +77,7 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
         </div>
 
         {/* Card */}
-        <div className="relative w-full overflow-hidden">
+        <div className="relative w-full">
           <AnimatePresence initial={false} custom={lastVoteDirection} mode="wait">
             {currentIndex < deck.length ? (
               <motion.div
@@ -90,8 +88,9 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
                 animate="center"
                 exit="exit"
                 transition={{
-                  x: { type: 'spring', stiffness: 700, damping: 38 },
-                  opacity: { duration: 0.05 },
+                  exit: { duration: 0.22, ease: 'easeIn' },
+                  enter: { duration: 0.18, ease: 'easeOut' },
+                  opacity: { duration: 0.15 },
                 }}
                 className="w-full bg-white/[0.07] border border-white/[0.09] backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col"
               >
