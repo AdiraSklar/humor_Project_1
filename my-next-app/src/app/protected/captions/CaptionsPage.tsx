@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ThumbsUp, ThumbsDown, Undo2 } from 'lucide-react';
 import { handleVote } from './actions';
@@ -30,6 +30,16 @@ const cardVariants = {
 };
 
 type HistoryEntry = { captionIndex: number; voteDirection: number };
+type BurstItem = { id: number; x: number; delay: number; yDist: number };
+
+const BURST_CONFIGS: Omit<BurstItem, 'id'>[] = [
+  { x: -80, delay: 0,    yDist: 130 },
+  { x: -38, delay: 0.05, yDist: 155 },
+  { x:   5, delay: 0.02, yDist: 140 },
+  { x:  42, delay: 0.07, yDist: 160 },
+  { x:  85, delay: 0.03, yDist: 135 },
+  { x: -15, delay: 0.1,  yDist: 150 },
+];
 
 export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps) {
   const [deck] = useState<Caption[]>(() => captions);
@@ -37,6 +47,8 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
   const [lastVoteDirection, setLastVoteDirection] = useState(1);
   const [isVoting, setIsVoting] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [bursts, setBursts] = useState<BurstItem[]>([]);
+  const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeCaption = useMemo(() => deck[currentIndex], [deck, currentIndex]);
   const imageUrl = useMemo(
@@ -51,6 +63,12 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
     setLastVoteDirection(voteDirection);
     setHistory((prev) => [...prev, { captionIndex: currentIndex, voteDirection }]);
     setCurrentIndex((prev) => prev + 1);
+
+    if (voteDirection === 1) {
+      if (burstTimer.current) clearTimeout(burstTimer.current);
+      setBursts(BURST_CONFIGS.map((cfg, i) => ({ ...cfg, id: Date.now() + i })));
+      burstTimer.current = setTimeout(() => setBursts([]), 850);
+    }
 
     const captionId = activeCaption.id;
     const fd = new FormData();
@@ -102,8 +120,25 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
           <span className="text-xs text-white/40 tracking-widest">{deck.length}</span>
         </div>
 
-        {/* Card */}
+        {/* Card + burst wrapper */}
         <div className="relative w-full">
+
+          {/* Laugh burst — floats up from the button row, not over the image */}
+          <AnimatePresence>
+            {bursts.map((burst) => (
+              <motion.div
+                key={burst.id}
+                initial={{ opacity: 1, y: 0, scale: 0.7 }}
+                animate={{ opacity: 0, y: -burst.yDist, scale: 1.5 }}
+                transition={{ duration: 0.6, delay: burst.delay, ease: [0.2, 0, 0.5, 1] }}
+                className="absolute text-4xl pointer-events-none select-none z-20"
+                style={{ left: `calc(50% + ${burst.x}px)`, bottom: '72px', transform: 'translateX(-50%)' }}
+              >
+                😂
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
           <AnimatePresence initial={false} custom={lastVoteDirection} mode="wait">
             {currentIndex < deck.length ? (
               <motion.div
@@ -169,7 +204,7 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
               >
                 <span className="text-5xl select-none">🎉</span>
                 <div className="flex flex-col gap-1">
-                  <h2 className="text-2xl font-bold text-white">You&apos;re all done!</h2>
+                  <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'var(--font-display)' }}>You&apos;re all done!</h2>
                   <p className="text-sm text-white/40">You rated every caption in the deck.</p>
                 </div>
                 <div className="flex gap-3">
@@ -186,6 +221,7 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
                     onClick={handleRestart}
                     type="button"
                     className="px-7 py-2.5 bg-white/[0.07] hover:bg-violet-500/15 border border-white/15 hover:border-violet-400/35 text-white/90 hover:text-violet-200 font-semibold rounded-full transition-all"
+                    style={{ fontFamily: 'var(--font-display)' }}
                   >
                     Go Again
                   </button>
