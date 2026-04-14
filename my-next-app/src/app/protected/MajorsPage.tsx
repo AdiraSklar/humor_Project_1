@@ -31,7 +31,7 @@ export default function MajorsPage({ majors, majorsError }: { majors: Major[], m
           type="text"
           placeholder="Search for a major..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => { setSelectedLetter(''); setSearchTerm(e.target.value); }}
           className="w-full px-4 py-2 text-black rounded-lg bg-white/80 focus:outline-none focus:ring-2 focus:ring-purple-400"
         />
       </div>
@@ -39,7 +39,7 @@ export default function MajorsPage({ majors, majorsError }: { majors: Major[], m
         {alphabet.map((letter) => (
           <button
             key={letter}
-            onClick={() => setSelectedLetter(letter === selectedLetter ? '' : letter)}
+            onClick={() => { setSearchTerm(''); setSelectedLetter(letter === selectedLetter ? '' : letter); }}
             className={`w-10 h-10 rounded-full text-sm font-bold transition-colors ${
               selectedLetter === letter
                 ? 'bg-white text-purple-600'
