@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Lato } from "next/font/google"; // Import Lato
+import { GenerationProvider } from "@/context/GenerationContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,7 +34,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${lato.variable} antialiased`} // Add lato.variable
       >
-        {children}
+        <GenerationProvider>{children}</GenerationProvider>
       </body>
     </html>
   );

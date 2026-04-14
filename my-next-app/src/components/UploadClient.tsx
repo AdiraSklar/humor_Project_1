@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Upload, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useGeneration } from '@/context/GenerationContext';
 
 const SUPPORTED_TYPES = [
   'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic',
@@ -33,8 +34,28 @@ export default function UploadClient() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [slideDir, setSlideDir] = useState(1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const { setIsGenerating } = useGeneration();
 
   const busy = stage !== 'idle' && stage !== 'error';
+
+  // Keep context in sync so HeaderNav can disable nav links
+  useEffect(() => { setIsGenerating(busy); }, [busy, setIsGenerating]);
+
+  // Warn if user tries to refresh/close while generating
+  useEffect(() => {
+    if (!busy) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [busy]);
+
+  const handleCancel = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setStage('idle');
+    if (inputRef.current) inputRef.current.value = '';
+  };
 
   const processFile = async (file: File) => {
     if (!SUPPORTED_TYPES.includes(file.type)) {
@@ -42,6 +63,10 @@ export default function UploadClient() {
       setStage('error');
       return;
     }
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const { signal } = controller;
 
     const preview = URL.createObjectURL(file);
     setErrorMsg('');
@@ -52,6 +77,7 @@ export default function UploadClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contentType: file.type }),
+        signal,
       });
       if (!presignRes.ok) throw new Error((await presignRes.json()).error ?? 'Presign failed');
       const { presignedUrl, cdnUrl } = await presignRes.json();
@@ -61,6 +87,7 @@ export default function UploadClient() {
         method: 'PUT',
         headers: { 'Content-Type': file.type },
         body: file,
+        signal,
       });
       if (!putRes.ok) throw new Error(`Upload failed (${putRes.status})`);
 
@@ -69,6 +96,7 @@ export default function UploadClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cdnUrl }),
+        signal,
       });
       if (!genRes.ok) throw new Error((await genRes.json()).error ?? 'Caption generation failed');
 
@@ -81,10 +109,12 @@ export default function UploadClient() {
       setActiveIndex(nextIndex);
       setStage('idle');
     } catch (e: unknown) {
+      if (e instanceof Error && e.name === 'AbortError') return; // cancelled — already reset by handleCancel
       setErrorMsg(e instanceof Error ? e.message : String(e));
       setStage('error');
     }
 
+    abortRef.current = null;
     if (inputRef.current) inputRef.current.value = '';
   };
 
@@ -135,7 +165,7 @@ export default function UploadClient() {
                   />
                 ))}
               </div>
-              {/* Stage label — transitions between stages */}
+              {/* Stage label */}
               <AnimatePresence mode="wait">
                 <motion.p
                   key={stage}
@@ -149,6 +179,15 @@ export default function UploadClient() {
                   {STAGE_LABEL[stage]}
                 </motion.p>
               </AnimatePresence>
+              {/* Cancel */}
+              <button
+                onClick={handleCancel}
+                type="button"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/15 text-white/50 hover:text-white/90 hover:bg-white/[0.1] hover:border-white/25 text-xs font-medium transition-all duration-150"
+              >
+                <X size={12} />
+                Cancel
+              </button>
             </motion.div>
           )}
         </AnimatePresence>

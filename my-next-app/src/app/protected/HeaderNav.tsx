@@ -4,6 +4,7 @@ import { type User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import UserProfile from './UserProfile';
 import { usePathname } from 'next/navigation';
+import { useGeneration } from '@/context/GenerationContext';
 
 function navCls(active: boolean) {
   return `px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-150 ${
@@ -15,6 +16,7 @@ function navCls(active: boolean) {
 
 export default function HeaderNav({ user }: { user: User }) {
   const pathname = usePathname();
+  const { isGenerating } = useGeneration();
 
   const majorsActive   = pathname === '/protected';
   const captionsActive = pathname === '/protected/captions';
@@ -29,15 +31,25 @@ export default function HeaderNav({ user }: { user: User }) {
 
         {/* Nav pills */}
         <div className="flex items-center gap-1">
-          <Link href="/protected">
-            <button type="button" className={navCls(majorsActive)}>Majors</button>
-          </Link>
-          <Link href="/protected/captions">
-            <button type="button" className={navCls(captionsActive)}>Rate Captions</button>
-          </Link>
-          <Link href="/upload">
-            <button type="button" className={navCls(uploadActive)}>Generate</button>
-          </Link>
+          {isGenerating ? (
+            <>
+              <button type="button" disabled className={`${navCls(majorsActive)} opacity-30 cursor-not-allowed`}>Majors</button>
+              <button type="button" disabled className={`${navCls(captionsActive)} opacity-30 cursor-not-allowed`}>Rate Captions</button>
+              <button type="button" className={navCls(uploadActive)}>Generate</button>
+            </>
+          ) : (
+            <>
+              <Link href="/protected">
+                <button type="button" className={navCls(majorsActive)}>Majors</button>
+              </Link>
+              <Link href="/protected/captions">
+                <button type="button" className={navCls(captionsActive)}>Rate Captions</button>
+              </Link>
+              <Link href="/upload">
+                <button type="button" className={navCls(uploadActive)}>Generate</button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Avatar */}
