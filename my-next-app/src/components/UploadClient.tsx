@@ -137,8 +137,8 @@ export default function UploadClient() {
           onClick={() => !busy && inputRef.current?.click()}
           disabled={busy}
           type="button"
-          className="group flex items-center gap-2.5 px-8 py-3.5 bg-white/[0.07] hover:bg-violet-500/15 border border-white/15 hover:border-violet-400/40 disabled:opacity-40 disabled:cursor-not-allowed text-white/90 hover:text-violet-200 font-semibold text-base rounded-full shadow-xl backdrop-blur-sm transition-all duration-200 tracking-wide"
-          style={{ fontFamily: 'var(--font-lato), sans-serif' }}
+          className="group flex items-center gap-2.5 px-8 py-3.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-base rounded-full shadow-[0_0_24px_rgba(124,58,237,0.35)] hover:shadow-[0_0_32px_rgba(124,58,237,0.5)] active:scale-95 transition-all duration-200 tracking-wide"
+          style={{ fontFamily: 'var(--font-display)' }}
         >
           <Upload size={17} className="group-hover:scale-110 transition-transform duration-200" />
           {history.length > 0 ? 'Upload Another' : 'Upload Image'}
@@ -228,7 +228,7 @@ export default function UploadClient() {
                 animate="center"
                 exit="exit"
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="w-full bg-white/[0.07] border border-white/[0.09] backdrop-blur-2xl rounded-3xl shadow-2xl p-5 flex flex-col gap-5"
+                className="w-full bg-white/[0.05] border border-violet-500/[0.15] backdrop-blur-2xl rounded-3xl shadow-[0_4px_40px_rgba(0,0,0,0.4)] p-5 flex flex-col gap-5"
               >
                 {/* Image */}
                 <img

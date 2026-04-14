@@ -91,8 +91,23 @@ export default async function ProtectedCaptionsPage() {
   console.log(`Rendering ${visibleCaptions.length}/${captions.length} captions with visible images.`);
 
   return (
-      <div className="flex-1 w-full flex flex-col items-center min-h-screen text-white" style={{ background: 'radial-gradient(ellipse 120% 45% at 50% 0%, rgba(99,102,241,0.1) 0%, #08080e 55%)' }}>
+      <div className="flex-1 w-full flex flex-col items-center min-h-screen text-white" style={{ background: 'radial-gradient(ellipse 110% 40% at 50% 0%, rgba(124,58,237,0.14) 0%, #08080e 58%)' }}>
         <HeaderNav user={user} />
+
+        {/* Page hero */}
+        <div className="flex flex-col items-center gap-2 text-center pt-8 pb-2 px-4">
+          <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-violet-400/60">Captions</span>
+          <h1
+            className="text-2xl font-bold bg-gradient-to-r from-violet-300 to-fuchsia-300 bg-clip-text text-transparent"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            Rate &amp; React
+          </h1>
+          <p className="text-sm text-white/35 max-w-xs leading-relaxed">
+            Rate memes and help us improve our humor app
+          </p>
+        </div>
+
         <CaptionsPage captions={visibleCaptions} imagesMap={imagesMap} />
       </div>
   );

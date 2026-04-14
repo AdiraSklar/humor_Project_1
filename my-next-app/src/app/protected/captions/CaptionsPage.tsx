@@ -108,16 +108,29 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
   }
 
   return (
-    <div className="w-full flex flex-col items-center px-4 pb-10">
+    <div className="w-full flex flex-col items-center px-4 pt-4 pb-10">
       <div className="w-full max-w-sm flex flex-col items-center gap-4">
 
-        {/* Counter badge */}
-        <div className="flex items-center gap-2 bg-white/[0.07] border border-white/10 rounded-full px-4 py-1.5">
-          <span className="text-xs font-semibold text-white/80 tracking-widest">
-            {currentIndex < deck.length ? currentIndex + 1 : deck.length}
-          </span>
-          <span className="text-white/25 text-xs">/</span>
-          <span className="text-xs text-white/40 tracking-widest">{deck.length}</span>
+        {/* Counter row with back button */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleBack}
+            disabled={isVoting || history.length === 0}
+            type="button"
+            aria-label="Go back"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.08] border border-white/20 text-white/70 hover:text-white hover:bg-white/[0.13] hover:border-white/30 transition-all duration-150 disabled:opacity-20 disabled:cursor-not-allowed"
+          >
+            <Undo2 size={12} />
+            <span className="text-xs font-semibold">Back</span>
+          </button>
+
+          <div className="flex items-center gap-2 bg-white/[0.07] border border-white/10 rounded-full px-4 py-1.5">
+            <span className="text-xs font-semibold text-white/80 tracking-widest">
+              {currentIndex < deck.length ? currentIndex + 1 : deck.length}
+            </span>
+            <span className="text-white/25 text-xs">/</span>
+            <span className="text-xs text-white/40 tracking-widest">{deck.length}</span>
+          </div>
         </div>
 
         {/* Card + burst wrapper */}
@@ -149,7 +162,7 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
                 animate="center"
                 exit="exit"
                 transition={{ opacity: { duration: 0.15 } }}
-                className="w-full bg-white/[0.07] border border-white/[0.09] backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+                className="w-full bg-white/[0.06] border border-violet-500/[0.15] backdrop-blur-2xl rounded-3xl shadow-[0_4px_40px_rgba(0,0,0,0.4),0_0_0_1px_rgba(124,58,237,0.08)] overflow-hidden flex flex-col"
               >
                 {/* Image — edge to edge */}
                 {imageUrl && (
@@ -231,19 +244,6 @@ export default function CaptionsPage({ captions, imagesMap }: CaptionsPageProps)
           </AnimatePresence>
         </div>
 
-        {/* Back button */}
-        {currentIndex < deck.length && (
-          <button
-            onClick={handleBack}
-            disabled={isVoting || history.length === 0}
-            type="button"
-            aria-label="Go back"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/[0.08] border border-white/20 text-white/70 hover:text-white hover:bg-white/[0.13] hover:border-white/30 transition-all duration-150 disabled:opacity-20 disabled:cursor-not-allowed"
-          >
-            <Undo2 size={13} />
-            <span className="text-xs font-semibold">Back</span>
-          </button>
-        )}
 
       </div>
     </div>
