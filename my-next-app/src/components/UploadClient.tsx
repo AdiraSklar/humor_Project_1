@@ -99,14 +99,40 @@ export default function UploadClient() {
         signal,
       });
       if (!genRes.ok) throw new Error((await genRes.json()).error ?? 'Caption generation failed');
+      if (!genRes.body) throw new Error('No response body');
 
-      const { captions }: { captions: string[] } = await genRes.json();
-
-      // New card always appended to the right; jump to it
+      // Show the card immediately with just the image — captions stream in as each finishes
       const nextIndex = history.length;
       setSlideDir(1);
-      setHistory(prev => [...prev, { preview, captions: captions ?? [] }]);
+      setHistory(prev => [...prev, { preview, captions: [] }]);
       setActiveIndex(nextIndex);
+
+      const reader = genRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const { caption } = JSON.parse(line) as { caption: string };
+            if (caption) {
+              setHistory(prev => {
+                const updated = [...prev];
+                const item = updated[nextIndex];
+                if (item) updated[nextIndex] = { ...item, captions: [...item.captions, caption] };
+                return updated;
+              });
+            }
+          } catch { /* malformed line — skip */ }
+        }
+      }
+
       setStage('idle');
     } catch (e: unknown) {
       if (e instanceof Error && e.name === 'AbortError') return; // cancelled — already reset by handleCancel
@@ -241,7 +267,9 @@ export default function UploadClient() {
                 <div className="flex flex-col gap-2">
                   <p className="text-[10px] text-white/50 text-center uppercase tracking-[0.22em] font-semibold">Generated Captions</p>
                   {activeItem.captions.length === 0 ? (
-                    <p className="text-center text-white/40 text-sm">No captions returned.</p>
+                    <p className="text-center text-white/40 text-sm">
+                      {stage === 'generating' ? 'Generating captions…' : 'No captions returned.'}
+                    </p>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
                       {activeItem.captions.map((caption, i) => (

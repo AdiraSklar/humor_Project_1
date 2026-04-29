@@ -44,37 +44,41 @@ export async function POST(request: Request) {
     );
   }
 
-  // Step 2: generate captions for the registered image
-  const captionsRes = await fetch(`${API_BASE}/pipeline/generate-captions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
+  const generateOne = async (): Promise<string> => {
+    const res = await fetch(`${API_BASE}/pipeline/generate-captions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ imageId }),
+    });
+    if (!res.ok) throw new Error(`generate-captions failed: ${await res.text()}`);
+    const data = await res.json();
+    const item = Array.isArray(data) ? data[0] : Array.isArray(data.captions) ? data.captions[0] : data;
+    return typeof item === 'string'
+      ? item
+      : (item as Record<string, string>).content ?? (item as Record<string, string>).text ?? String(item);
+  };
+
+  // Stream captions as NDJSON — each fires independently so the client sees them appear one by one
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      await Promise.allSettled(
+        Array.from({ length: 4 }, () =>
+          generateOne()
+            .then(caption => {
+              controller.enqueue(encoder.encode(JSON.stringify({ caption }) + '\n'));
+            })
+            .catch(() => {})
+        )
+      );
+      controller.close();
     },
-    body: JSON.stringify({ imageId, numCaptions: 4 }),
   });
 
-  if (!captionsRes.ok) {
-    const text = await captionsRes.text();
-    return NextResponse.json({ error: `generate-captions failed: ${text}` }, { status: captionsRes.status });
-  }
-
-  const captionsData = await captionsRes.json();
-
-  // Normalize captions into string[] regardless of response shape
-  const raw: unknown[] = Array.isArray(captionsData.captions)
-    ? captionsData.captions
-    : Array.isArray(captionsData)
-    ? captionsData
-    : [];
-
-  const captions: string[] = raw.map((c) =>
-    typeof c === 'string'
-      ? c
-      : (c as Record<string, string>).content ??
-        (c as Record<string, string>).text ??
-        String(c)
-  );
-
-  return NextResponse.json({ captions: captions.slice(0, 4) });
+  return new Response(stream, {
+    headers: { 'Content-Type': 'application/x-ndjson' },
+  });
 }
